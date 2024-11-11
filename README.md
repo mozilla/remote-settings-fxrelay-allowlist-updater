@@ -21,9 +21,7 @@ $ docker run --rm --detach \
 Create the source collection:
 
 ```
-$ curl -X PUT http://localhost:8888/v1/buckets/main-workspace/collections/product-integrity \
-     -H 'Content-Type:application/json' \
-     -u editor:3d1t0r
+$ curl -X PUT http://localhost:8888/v1/buckets/main-workspace/collections/product-integrity
 ```
 
 And run the script:
