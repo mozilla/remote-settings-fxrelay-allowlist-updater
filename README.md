@@ -3,6 +3,7 @@
 Turn a source of data into records on Remote Settings.
 
 * [Compliant with specs](https://remote-settings.readthedocs.io/en/latest/support.html#how-do-i-automate-the-publication-of-records-forever)
+* Dry run
 * Dual sign-off
 * Lint
 * Github Action CI
