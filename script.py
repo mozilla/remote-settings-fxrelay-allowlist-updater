@@ -49,7 +49,10 @@ def main():
     print("Fetch server info...", end="")
     server_info = client.server_info()
     print("✅")
-    print(f"Logged in as {server_info['user']['id']}")
+    if "user" not in server_info:
+        print("⚠️ Anonymous")
+    else:
+        print(f"Logged in as {server_info['user']['id']}")
 
     # Get source records.
     print("Fetch records from source of truth...", end="")
