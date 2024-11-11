@@ -42,3 +42,13 @@ Batch #2: PUT /buckets/main-workspace/collections/product-integrity/records/esr 
 Apply changes...3 operations ✅
 Request review...✅
 ```
+
+### On the DEV server
+
+* Login on the DEV Admin UI and copy the Bearer header value (UI top right bar)
+
+And use it to run the script:
+
+```
+$ read -s BEARER
+$ AUTHORIZATION=$BEARER SERVER="http://remote-settings-dev.allizom.org/v1" python script.py
