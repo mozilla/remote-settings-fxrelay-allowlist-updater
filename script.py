@@ -1,5 +1,6 @@
 import os
 import sys
+from collections import defaultdict
 
 import kinto_http
 import requests
@@ -44,6 +45,17 @@ def main():
     client = kinto_http.Client(
         server_url=SERVER, auth=AUTHORIZATION, bucket="main-workspace", collection=COLLECTION_NAME
     )
+
+    if IS_DRY_RUN:
+        # Replace write operations with no-op.
+        orig_request = client.session.request
+
+        def dry_run(method, *args, **kwargs):
+            if method.lower() in ("get", "head"):
+                return orig_request(method, *args, **kwargs)
+            return defaultdict(), {}
+
+        client.session.request = dry_run
 
     # Check credentials.
     print("Fetch server info...", end="")
