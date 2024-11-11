@@ -1,0 +1,41 @@
+[tool.poetry]
+name = "rs-script"
+version = "0.1.0"
+description = "A minimal Remote Settings cronjob script"
+authors = ["Your Name <you@example.com>"]
+license = "MPLv2"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+kinto-http = "^11.3.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.7.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 99
+extend-exclude = [
+    "__pycache__",
+    ".venv/",
+]
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E", "W",
+    # flake8
+    "F",
+    # isort
+    "I",
+]
+ignore = [
+    # `format` will wrap lines.
+    "E501",
+]
+
+[tool.ruff.lint.isort]
+lines-after-imports = 2

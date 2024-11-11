@@ -1,0 +1,29 @@
+name: Run CI checks
+
+on: pull_request
+
+jobs:
+  run_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "poetry"
+      - name: Lint
+        run: make lint
+
+  test_load:
+    runs-on: ubuntu-latest
+    env:
+      SERVER: "http://localhost:8888/v1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run local server
+        run: |
+          docker run --detach -p 8888:8888 \
+          --env KINTO_INI=config/testing.ini \
+            mozilla/remote-settings
+      - name: Run job
+        run: make start
