@@ -4,6 +4,7 @@ from collections import defaultdict
 
 import kinto_http
 import requests
+from kinto_http.utils import collection_diff
 
 
 AUTHORIZATION = os.getenv("AUTHORIZATION", "")
@@ -28,17 +29,6 @@ def get_source_records():
         {"id": "beta", "version": details["FIREFOX_DEVEDITION"]},
         {"id": "esr", "version": details["FIREFOX_ESR"]},
     ]
-
-
-def records_equal(a, b):
-    """
-    Example function that will compare a source with a destination.
-    Adjust to your needs...
-    """
-    ignore_fields = ("last_modified", "schema")
-    ac = {k: v for k, v in a.items() if k not in ignore_fields}
-    bc = {k: v for k, v in b.items() if k not in ignore_fields}
-    return ac == bc
 
 
 def main():
@@ -73,20 +63,11 @@ def main():
 
     # Get current destination records.
     print("Fetch current destination records...", end="")
-    records_by_id = {r["id"]: r for r in client.get_records()}
+    dest_records = client.get_records()
     print("✅")
 
     # Create or update the destination records.
-    to_create = []
-    to_update = []
-    for r in source_records:
-        record = records_by_id.pop(r["id"], None)
-        if record is None:
-            to_create.append(r)
-        elif not records_equal(r, record):
-            to_update.append(r)
-    # Delete the records missing from source.
-    to_delete = records_by_id.values()
+    to_create, to_update, to_delete = collection_diff(source_records, dest_records)
 
     has_pending_changes = (len(to_create) + len(to_update) + len(to_delete)) > 0
     if not has_pending_changes:
@@ -111,11 +92,11 @@ def main():
 
     if ENVIRONMENT == "dev":
         # Self approve changes on DEV.
-        client.patch_collection(data={"status": "to-sign"})
+        client.approve_changes(message="r+")
     else:
         # Request review.
         print("Request review...", end="")
-        client.patch_collection(data={"status": "to-review"})
+        client.request_review(message="r?")
         print("✅")
 
     return os.EX_OK
