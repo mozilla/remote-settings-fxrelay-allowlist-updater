@@ -7,7 +7,7 @@ from script import main
 
 @pytest.fixture
 def mocked_client():
-    with mock.patch('kinto_http.Client') as mock_client:
+    with mock.patch("kinto_http.Client") as mock_client:
         yield mock_client
 
 
@@ -20,12 +20,8 @@ def test_main_anonymous(mocked_client, capsys):
     assert "⚠️ Anonymous" in capsys.readouterr().out
 
 
-def test_main_anonymous(mocked_client, capsys):
-    mocked_client().server_info.return_value = {
-        "user": {
-            "id": "account:bot"
-        }
-    }
+def test_main_logged_in(mocked_client, capsys):
+    mocked_client().server_info.return_value = {"user": {"id": "account:bot"}}
 
     main()
 
