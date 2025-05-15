@@ -73,10 +73,10 @@ def main():
     with client.batch() as batch:
         for r in to_create:
             batch.create_record(data=r)
-        for r in to_update:
+        for old, new in to_update:
             # Let the server assign a new timestamp.
-            r.pop("last_modified", None)
-            batch.update_record(data=r)
+            new.pop("last_modified", None)
+            batch.update_record(data=new)
         for r in to_delete:
             batch.delete_record(id=r["id"])
     ops_count = len(batch.results())
