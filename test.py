@@ -7,13 +7,15 @@ from script import main
 
 @pytest.fixture
 def mocked_client():
-    with mock.patch("kinto_http.Client", spec=True) as mocked_class:
+    # Mock the kinto_http.Client where it is imported.
+    with mock.patch("script.kinto_http.Client", spec=True) as mocked_class:
         yield mocked_class()
 
 
 @pytest.fixture
 def mocked_get():
-    with mock.patch("requests.get") as mock_get:
+    # Mock requests where it is imported.
+    with mock.patch("script.requests.get") as mock_get:
         yield mock_get
 
 
