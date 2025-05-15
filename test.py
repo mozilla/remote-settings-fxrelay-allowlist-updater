@@ -71,6 +71,9 @@ def test_outdated(mocked_client, mocked_get, capsys):
         "FIREFOX_DEVEDITION": "100.0b1",
         "FIREFOX_ESR": "91.0",
     }
+    mocked_client.batch().__enter__().results.return_value = [
+        {"id": "release", "version": "100.0"}
+    ]
 
     main()
 
