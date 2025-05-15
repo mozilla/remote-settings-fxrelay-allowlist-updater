@@ -7,6 +7,7 @@ Turn a source of data into records on Remote Settings.
 * Dual sign-off
 * Lint
 * Github Action CI
+* Tests with `kinto_http` mocks
 
 ## Run
 
