@@ -20,3 +20,7 @@ lint: $(INSTALL_STAMP)
 .PHONY: start
 start: $(INSTALL_STAMP)
 	$(VENV)/bin/python -m poetry run python script.py
+
+.PHONY: test
+test: $(INSTALL_STAMP)
+	$(VENV)/bin/python -m poetry run py.test test.py
