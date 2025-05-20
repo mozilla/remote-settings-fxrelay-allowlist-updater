@@ -11,7 +11,7 @@ kinto-http = "^11.8.0"
 pytest = "^8.3.5"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.11.9"
+ruff = "^0.11.10"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
