@@ -1,17 +1,19 @@
 [tool.poetry]
-name = "rs-script"
+name = "fxrelay-allowlist-updater"
 version = "0.1.0"
-description = "A minimal Remote Settings cronjob script"
-authors = ["Your Name <you@example.com>"]
+description = "Remote Settings cronjob script to update fxrelay-allowlist"
+authors = ["Luke Crouch <lcrouch@mozilla.com>"]
 license = "MPLv2"
 
 [tool.poetry.dependencies]
 python = "^3.12"
 kinto-http = "^11.8.0"
-pytest = "^8.3.5"
+requests = "2.32.3"
 
 [tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
 ruff = "^0.11.11"
+types-requests = "2.32.0.20250602"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

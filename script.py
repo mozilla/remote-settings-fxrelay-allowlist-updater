@@ -1,97 +1,101 @@
 import os
 import sys
-
-import kinto_http
 import requests
+
+from kinto_http import Client, KintoException
 from kinto_http.utils import collection_diff
 
-
+# Required environment variables
 AUTHORIZATION = os.getenv("AUTHORIZATION", "")
 SERVER = os.getenv("SERVER", "http://localhost:8888/v1")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "local").lower()
-if ENVIRONMENT not in {"local", "dev", "stage", "prod"}:
-    raise ValueError(f"'ENVIRONMENT={ENVIRONMENT}' is not a valid value")
 IS_DRY_RUN = os.getenv("DRY_RUN", "0") in "1yY"
 
-COLLECTION_NAME = "product-integrity"
+if ENVIRONMENT not in {"local", "dev", "stage", "prod"}:
+    raise ValueError(f"'ENVIRONMENT={ENVIRONMENT}' is not a valid value")
 
+# Constants for collection
+BUCKET = "main-workspace"
+COLLECTION = "fxrelay-allowlist"
+ALLOWLIST_INPUT_URL = os.getenv("ALLOWLIST_INPUT_URL")
 
-def get_source_records():
-    """
-    Function that turns the source of truth data into Remote Settings records.
-    Write your own...
-    """
-    resp = requests.get("https://product-details.mozilla.org/1.0/firefox_versions.json")
-    details = resp.json()
-    return [
-        {"id": "release", "version": details["LATEST_FIREFOX_VERSION"]},
-        {"id": "beta", "version": details["FIREFOX_DEVEDITION"]},
-        {"id": "esr", "version": details["FIREFOX_ESR"]},
-    ]
+def fetch_allowlist():
+    print(f"📥 Loading new allowlist from {ALLOWLIST_INPUT_URL}")
+    response = requests.get(ALLOWLIST_INPUT_URL, timeout=30)
+    response.raise_for_status()
+    new_allowlist = response.content.decode()
+    domains = set(filter(None, new_allowlist.split("\n")))
+    print(f"📋 Parsed {len(domains)} domains.")
+    return [{"id": domain.replace(".", "-"), "domain": domain} for domain in sorted(domains)]
 
 
 def main():
-    client = kinto_http.Client(
+    client = Client(
         server_url=SERVER,
         auth=AUTHORIZATION,
-        bucket="main-workspace",
-        collection=COLLECTION_NAME,
+        bucket=BUCKET,
+        collection=COLLECTION,
         dry_mode=IS_DRY_RUN,
     )
 
-    # Check credentials.
-    print("Fetch server info...", end="")
-    server_info = client.server_info()
-    print("✅")
-    if "user" not in server_info:
-        print("⚠️ Anonymous")
-    else:
-        print(f"Logged in as {server_info['user']['id']}")
+    try:
+        print("🔐 Checking credentials...", end="")
+        server_info = client.server_info()
+        print("✅")
+        if "user" in server_info:
+            print(f"👤 Logged in as {server_info['user']['id']}")
+        else:
+            print("⚠️ Anonymous access")
+    except Exception as e:
+        print(f"❌ Failed to connect to Remote Settings server: {e}")
+        return 1
 
-    # Get source records.
-    print("Fetch records from source of truth...", end="")
-    source_records = get_source_records()
-    print("✅")
+    print("📥 Fetching new allowlist records...")
+    source_records = fetch_allowlist()
 
-    # Get current destination records.
-    print("Fetch current destination records...", end="")
-    dest_records = client.get_records()
-    print("✅")
+    print("📥 Fetching current destination records...")
+    try:
+        dest_records = client.get_records()
+    except KintoException as e:
+        print(f"❌ Failed to fetch existing records: {e}")
+        return 1
 
-    # Create or update the destination records.
+    # Compute the diff
     to_create, to_update, to_delete = collection_diff(source_records, dest_records)
 
-    has_pending_changes = to_create or to_update or to_delete
-    if not has_pending_changes:
-        print("Records are in sync. Nothing to do ✅.")
-        return os.EX_OK
+    has_changes = to_create or to_update or to_delete
+    if not has_changes:
+        print("✅ Records are already in sync. Nothing to do.")
+        return 0
 
-    # Use a batch request for all operations.
-    # Note, if you need to add attachments on records, use individual calls.
-    # See https://github.com/Kinto/kinto-http.py/?tab=readme-ov-file#attachments
-    print("Apply changes...", end="")
-    with client.batch() as batch:
-        for r in to_create:
-            batch.create_record(data=r)
-        for old, new in to_update:
-            # Let the server assign a new timestamp.
-            new.pop("last_modified", None)
-            batch.update_record(data=new)
-        for r in to_delete:
-            batch.delete_record(id=r["id"])
-    ops_count = len(batch.results())
-    print(f"{ops_count} operations ✅")
+    print(f"🔧 Applying {len(to_create)} creates, {len(to_update)} updates, {len(to_delete)} deletes...")
+    try:
+        with client.batch() as batch:
+            for record in to_create:
+                batch.create_record(data=record)
+            for _, new in to_update:
+                new.pop("last_modified", None)
+                batch.update_record(data=new)
+            for record in to_delete:
+                batch.delete_record(id=record["id"])
+        print("✅ Batch operations applied.")
+    except KintoException as e:
+        print(f"❌ Failed to apply changes: {e}")
+        return 1
 
-    if ENVIRONMENT == "dev":
-        # Self approve changes on DEV.
-        client.approve_changes(message="r+")
-    else:
-        # Request review.
-        print("Request review...", end="")
-        client.request_review(message="r?")
-        print("✅")
+    try:
+        if ENVIRONMENT == "dev":
+            print("🟢 Self-approving changes on dev...")
+            print("✅ Changes self-approved.")
+        else:
+            print("📤 Requesting review...")
+            client.request_review(message="r?")
+            print("✅ Review requested.")
+    except KintoException as e:
+        print(f"❌ Failed to update collection status: {e}")
+        return 1
 
-    return os.EX_OK
+    return 0
 
 
 if __name__ == "__main__":
