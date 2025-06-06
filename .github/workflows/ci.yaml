@@ -45,6 +45,6 @@ jobs:
             mozilla/remote-settings
       - name: Create collection
         run: |
-          curl -X PUT http://localhost:8888/v1/buckets/main-workspace/collections/product-integrity
+          curl -X PUT http://localhost:8888/v1/buckets/main-workspace/collections/fxrelay-allowlist
       - name: Run job
         run: make start
