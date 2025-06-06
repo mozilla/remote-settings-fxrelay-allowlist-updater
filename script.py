@@ -1,9 +1,10 @@
 import os
 import sys
-import requests
 
+import requests
 from kinto_http import Client, KintoException
 from kinto_http.utils import collection_diff
+
 
 # Required environment variables
 AUTHORIZATION = os.getenv("AUTHORIZATION", "")
@@ -17,7 +18,11 @@ if ENVIRONMENT not in {"local", "dev", "stage", "prod"}:
 # Constants for collection
 BUCKET = "main-workspace"
 COLLECTION = "fxrelay-allowlist"
-ALLOWLIST_INPUT_URL = os.getenv("ALLOWLIST_INPUT_URL", "https://raw.githubusercontent.com/mozilla/fx-private-relay/refs/heads/main/privaterelay/fxrelay-allowlist-domains.txt")
+ALLOWLIST_INPUT_URL = os.getenv(
+    "ALLOWLIST_INPUT_URL",
+    "https://raw.githubusercontent.com/mozilla/fx-private-relay/refs/heads/main/privaterelay/fxrelay-allowlist-domains.txt",
+)
+
 
 def fetch_allowlist():
     print(f"📥 Loading new allowlist from {ALLOWLIST_INPUT_URL}")
@@ -68,7 +73,9 @@ def main():
         print("✅ Records are already in sync. Nothing to do.")
         return 0
 
-    print(f"🔧 Applying {len(to_create)} creates, {len(to_update)} updates, {len(to_delete)} deletes...")
+    print(
+        f"🔧 Applying {len(to_create)} creates, {len(to_update)} updates, {len(to_delete)} deletes..."
+    )
     try:
         with client.batch() as batch:
             for record in to_create:
