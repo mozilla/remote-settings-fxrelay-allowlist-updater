@@ -11,6 +11,7 @@ AUTHORIZATION = os.getenv("AUTHORIZATION", "")
 SERVER = os.getenv("SERVER", "http://localhost:8888/v1")
 ENVIRONMENT = os.getenv("ENVIRONMENT", "local").lower()
 IS_DRY_RUN = os.getenv("DRY_RUN", "0") in "1yY"
+REQUEST_TIMEOUT_SECONDS = int(os.getenv("REQUEST_TIMEOUT_SECONDS", "30"))
 
 if ENVIRONMENT not in {"local", "dev", "stage", "prod"}:
     raise ValueError(f"'ENVIRONMENT={ENVIRONMENT}' is not a valid value")
@@ -26,7 +27,7 @@ ALLOWLIST_INPUT_URL = os.getenv(
 
 def fetch_allowlist():
     print(f"📥 Loading new allowlist from {ALLOWLIST_INPUT_URL}")
-    response = requests.get(ALLOWLIST_INPUT_URL, timeout=30)
+    response = requests.get(ALLOWLIST_INPUT_URL, timeout=REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
     new_allowlist = response.content.decode()
     domains = set(filter(None, new_allowlist.split("\n")))
@@ -85,7 +86,8 @@ def main():
                 batch.update_record(data=new)
             for record in to_delete:
                 batch.delete_record(id=record["id"])
-        print("✅ Batch operations applied.")
+        ops_count = len(batch.results())
+        print(f"✅ Batch {ops_count} operations applied.")
     except KintoException as e:
         print(f"❌ Failed to apply changes: {e}")
         return 1
@@ -93,6 +95,8 @@ def main():
     try:
         if ENVIRONMENT == "dev":
             print("🟢 Self-approving changes on dev...")
+            client.request_review(message="r?")
+            client.approve_changes(message="r+")
             print("✅ Changes self-approved.")
         else:
             print("📤 Requesting review...")
