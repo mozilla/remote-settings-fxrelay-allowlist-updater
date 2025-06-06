@@ -17,7 +17,7 @@ if ENVIRONMENT not in {"local", "dev", "stage", "prod"}:
 # Constants for collection
 BUCKET = "main-workspace"
 COLLECTION = "fxrelay-allowlist"
-ALLOWLIST_INPUT_URL = os.getenv("ALLOWLIST_INPUT_URL")
+ALLOWLIST_INPUT_URL = os.getenv("ALLOWLIST_INPUT_URL", "https://raw.githubusercontent.com/mozilla/fx-private-relay/refs/heads/main/privaterelay/fxrelay-allowlist-domains.txt")
 
 def fetch_allowlist():
     print(f"📥 Loading new allowlist from {ALLOWLIST_INPUT_URL}")
