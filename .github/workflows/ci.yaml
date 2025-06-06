@@ -38,13 +38,24 @@ jobs:
         with:
           python-version: "3.12"
           cache: "poetry"
-      - name: Run local server
+      - name: Build ingestion job container
+        run:
+          docker build -t cronjob:test .
+      - name: Run local Remote Settings server
         run: |
-          docker run --detach -p 8888:8888 \
+          docker run --detach \
+            --network=host \
             --env KINTO_INI=config/testing.ini \
             mozilla/remote-settings
       - name: Create collection
         run: |
-          curl -X PUT http://localhost:8888/v1/buckets/main-workspace/collections/fxrelay-allowlist
-      - name: Run job
+          curl -X PUT ${SERVER}/buckets/main-workspace/collections/fxrelay-allowlist
+
+      - name: Run job from container
+        run: |
+          docker run -e SERVER=${SERVER} \
+            --network=host \
+            cronjob:test
+
+      - name: Run job from source
         run: make start
