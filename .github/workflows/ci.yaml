@@ -6,12 +6,12 @@ jobs:
   run_lint:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Check workflow files
         run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
           ./actionlint -color
         shell: bash
-      - uses: actions/checkout@v4
       - run: pipx install poetry
       - uses: actions/setup-python@v5
         with:
