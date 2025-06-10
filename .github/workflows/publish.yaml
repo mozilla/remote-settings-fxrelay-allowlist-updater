@@ -19,7 +19,7 @@ env:
   GAR_LOCATION: us
   # On tag, use prod project; otherwise, use nonprod
   GCP_PROJECT_ID: moz-fx-remote-settings-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && 'prod' || 'nonprod' }}
-  GAR_REPOSITORY: ingestion-job-${{ github.event.repository.name }}
+  GAR_REPOSITORY: ingestion-cronjob-${{ github.event.repository.name }}
   GAR_IMAGE_NAME: ${{ github.event.repository.name }}
 
 jobs:
