@@ -50,7 +50,7 @@ jobs:
             # Match how the service account is created in our Terraform code
             # https://github.com/mozilla-it/webservices-infra/blob/main/remote-settings/tf/modules/remote_settings_infra/ingestion_jobs.tf
             # Remove dashes and "remotesettings" from the repository name
-            cleaned_string=$(echo ${{ github.event.repository.name }} | sed 's/-//g' | sed 's/remotesettings//g')
+            cleaned_string=$(echo "${{ github.event.repository.name }}" | sed 's/-//g' | sed 's/remotesettings//g')
             # Trim to 30 characters here too.
             result=$(echo $cleaned_string | cut -c 1-30)
             echo "email=ingest-job-${result}@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
