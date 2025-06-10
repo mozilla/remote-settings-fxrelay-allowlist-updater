@@ -54,11 +54,11 @@ jobs:
             mozilla/remote-settings
       - name: Create collection
         run: |
-          curl -X PUT ${SERVER}/buckets/main-workspace/collections/fxrelay-allowlist
+          curl -X PUT "${SERVER}/buckets/main-workspace/collections/fxrelay-allowlist"
 
       - name: Run job from container
         run: |
-          docker run -e SERVER=${SERVER} \
+          docker run -e SERVER="${SERVER}" \
             --network=host \
             cronjob:test
 
