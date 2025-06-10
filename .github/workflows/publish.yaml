@@ -52,8 +52,8 @@ jobs:
             # Remove dashes and "remotesettings" from the repository name
             cleaned_string=$(echo "${{ github.event.repository.name }}" | sed 's/-//g' | sed 's/remotesettings//g')
             # Trim to 30 characters here too.
-            result=$(echo $cleaned_string | cut -c 1-30)
-            echo "email=ingest-job-${result}@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
+            result=$(echo "ingest-job-${cleaned_string}" | cut -c 1-30)
+            echo "email=${result}@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
 
       - id: gcp_auth
         name: Log into GCP
