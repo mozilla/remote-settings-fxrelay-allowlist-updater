@@ -19,8 +19,8 @@ env:
   GAR_LOCATION: us
   # On tag, use prod project; otherwise, use nonprod
   GCP_PROJECT_ID: moz-fx-remote-settings-${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && 'prod' || 'nonprod' }}
-  GAR_REPOSITORY: ingestion-job-${{ github.repository }}
-  GAR_IMAGE_NAME: ${{ github.repository }}
+  GAR_REPOSITORY: ingestion-job-${{ github.event.repository.name }}
+  GAR_IMAGE_NAME: ${{ github.event.repository.name }}
 
 jobs:
   build-and-publish:
@@ -50,10 +50,10 @@ jobs:
             # Match how the service account is created in our Terraform code
             # https://github.com/mozilla-it/webservices-infra/blob/main/remote-settings/tf/modules/remote_settings_infra/ingestion_jobs.tf
             # Remove dashes and "remotesettings" from the repository name
-            cleaned_string=$(echo ${{ github.repository }} | sed 's/-//g' | sed 's/remotesettings//g')
+            cleaned_string=$(echo ${{ github.event.repository.name }} | sed 's/-//g' | sed 's/remotesettings//g')
             # Trim to 30 characters here too.
             result=$(echo $cleaned_string | cut -c 1-30)
-            echo "email=${result}@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
+            echo "email=ingest-job-${result}@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com" >> $GITHUB_OUTPUT
 
       - id: gcp_auth
         name: Log into GCP
