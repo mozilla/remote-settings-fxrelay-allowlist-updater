@@ -114,7 +114,7 @@ def main():
         if ENVIRONMENT == "dev":
             print("🟢 Self-approving changes on dev...")
             client.request_review(message="r?")
-            client.approve_changes(message="r+")
+            client.approve_changes()
             print("✅ Changes self-approved.")
         else:
             print("📤 Requesting review...")
