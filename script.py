@@ -30,53 +30,32 @@ if ENVIRONMENT not in {"local", "dev", "stage", "prod"}:
 
 # Constants for collection
 BUCKET = "main-workspace"
-COLLECTION = "fxrelay-allowlist"
+ALLOWLIST_COLLECTION = "fxrelay-allowlist"
+BLOCKLIST_COLLECTION = "fxrelay-denylist"
+LIST_INPUT_URL_BASE = (
+    "https://raw.githubusercontent.com/mozilla/fx-private-relay/refs/heads/main/privaterelay"
+)
 ALLOWLIST_INPUT_URL = os.getenv(
     "ALLOWLIST_INPUT_URL",
-    "https://raw.githubusercontent.com/mozilla/fx-private-relay/refs/heads/main/privaterelay/fxrelay-allowlist-domains.txt",
+    f"{LIST_INPUT_URL_BASE}/fxrelay-allowlist-domains.txt",
+)
+BLOCKLIST_INPUT_URL = os.getenv(
+    "BLOCKLIST_INPUT_URL",
+    f"{LIST_INPUT_URL_BASE}/fxrelay-blocklist-domains.txt",
 )
 
 
-def fetch_allowlist():
-    print(f"📥 Loading new allowlist from {ALLOWLIST_INPUT_URL}")
-    response = requests.get(ALLOWLIST_INPUT_URL, timeout=REQUEST_TIMEOUT_SECONDS)
+def fetch_list(input_url):
+    print(f"📥 Loading list from {input_url}")
+    response = requests.get(input_url, timeout=REQUEST_TIMEOUT_SECONDS)
     response.raise_for_status()
-    new_allowlist = response.content.decode()
-    domains = set(filter(None, new_allowlist.split("\n")))
+    new_list = response.content.decode()
+    domains = set(filter(None, new_list.split("\n")))
     print(f"📋 Parsed {len(domains)} domains.")
     return [{"id": domain.replace(".", "-"), "domain": domain} for domain in sorted(domains)]
 
 
-def main():
-    if SENTRY_DSN:
-        # Initialize Sentry for error reporting.
-        sentry_sdk.init(SENTRY_DSN, integrations=[GcpIntegration()], environment=SENTRY_ENV)
-    else:
-        print("⚠️ Sentry is not configured. Set SENTRY_DSN environment variable to enable it.")
-
-    client = Client(
-        server_url=SERVER,
-        auth=AUTHORIZATION,
-        bucket=BUCKET,
-        collection=COLLECTION,
-        dry_mode=IS_DRY_RUN,
-    )
-
-    try:
-        print("🔐 Checking credentials...", end="")
-        server_info = client.server_info()
-        print("✅")
-        if "user" in server_info:
-            print(f"👤 Logged in as {server_info['user']['id']}")
-        else:
-            print("⚠️ Anonymous access")
-    except Exception as e:
-        print(f"❌ Failed to connect to Remote Settings server: {e}")
-        return 1
-
-    print("📥 Fetching new allowlist records...")
-    source_records = fetch_allowlist()
-
+def sync_collection(client, source_records):
     print("📥 Fetching current destination records...")
     try:
         dest_records = client.get_records()
@@ -123,6 +102,53 @@ def main():
     except KintoException as e:
         print(f"❌ Failed to update collection status: {e}")
         return 1
+
+    return 0
+
+
+def main():
+    if SENTRY_DSN:
+        # Initialize Sentry for error reporting.
+        sentry_sdk.init(SENTRY_DSN, integrations=[GcpIntegration()], environment=SENTRY_ENV)
+    else:
+        print("⚠️ Sentry is not configured. Set SENTRY_DSN environment variable to enable it.")
+
+    # --- Allowlist ---
+    allowlist_client = Client(
+        server_url=SERVER,
+        auth=AUTHORIZATION,
+        bucket=BUCKET,
+        collection=ALLOWLIST_COLLECTION,
+        dry_mode=IS_DRY_RUN,
+    )
+    try:
+        print("🔐 Checking credentials...", end="")
+        server_info = allowlist_client.server_info()
+        print("✅")
+        if "user" in server_info:
+            print(f"👤 Logged in as {server_info['user']['id']}")
+        else:
+            print("⚠️ Anonymous access")
+    except Exception as e:
+        print(f"❌ Failed to connect to Remote Settings server: {e}")
+        return 1
+
+    print("\n=== Processing ALLOWLIST ===")
+    print("📥 Fetching new allowlist records...")
+    allowlist_records = fetch_list(ALLOWLIST_INPUT_URL)
+    result = sync_collection(allowlist_client, allowlist_records)
+    if result != 0:
+        return result
+
+    # --- Blocklist ---
+    print("\n=== Processing BLOCKLIST ===")
+    blocklist_client = allowlist_client.clone(collection=BLOCKLIST_COLLECTION)
+
+    print("📥 Fetching new blocklist records...")
+    blocklist_records = fetch_list(BLOCKLIST_INPUT_URL)
+    result = sync_collection(blocklist_client, blocklist_records)
+    if result != 0:
+        return result
 
     return 0
 
